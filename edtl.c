@@ -62,7 +62,7 @@ bool REACTION;
 bool RELEASE;
 
 void calc_attrs_for_first_req() {
-    TRIGGER = re(PREV_H && PREV_D, H && D) && !D;
+    TRIGGER = re(PREV_H, H) && !D;
     INVARIANT = true;
     FINAL = false;
     DELAY = true;
