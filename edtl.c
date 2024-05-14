@@ -64,10 +64,10 @@ bool RELEASE;
 void calc_attrs_for_first_req() {
     TRIGGER = re(PREV_H, H) && !D;
     INVARIANT = true;
-    FINAL = false;
+    FINAL = true;
     DELAY = true;
-    REACTION = false;
-    RELEASE = true;
+    REACTION = D;
+    RELEASE = false;
 }
 
 // void calc_attrs_for_second_req() {
