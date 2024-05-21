@@ -7,27 +7,36 @@
 /////////////// VARIABLES ///////////////
 /////////////////////////////////////////
 
-bool H;
-bool PREV_H;
+typedef struct vars {
+// %s
+    // generated
+    bool h;
+    bool prev_h;
 
-bool D;
-bool PREV_D;
+    bool d;
+    bool prev_d;
+} Vars;
 
 bool rand_bool() {
     return rand() % 2;
 }
 
-void init_vars() {
-    H = PREV_H = rand_bool();
-    D = PREV_D = rand_bool();
+void init_vars(Vars* vars) {
+// %s
+    // generated
+    vars->h = vars->prev_h = rand_bool();
+    vars->d = vars->prev_d = rand_bool();
+    printf("h: %d, d: %d\n", vars->h, vars->d);
 }
 
-void update_vars() {
-    PREV_H = H;
-    H = rand_bool();
+void update_vars(Vars* vars) {
+// %s
+    // generated
+    vars->prev_h = vars->h;
+    vars->h = rand_bool();
 
-    PREV_D = D;
-    D = rand_bool();
+    vars->prev_d = vars->d;
+    vars->d = rand_bool();
 }
 
 /////////////////////////////////////////////////////
@@ -54,108 +63,127 @@ bool low(bool prev_v, bool v) {
 ///////////// REQUIREMENTS AND ATTRIBUTES //////////////
 ////////////////////////////////////////////////////////
 
-bool TRIGGER;
-bool INVARIANT;
-bool FINAL;
-bool DELAY;
-bool REACTION;
-bool RELEASE;
+typedef struct requirement {
+    bool trigger;
+    bool invariant;
+    bool final;
+    bool delay;
+    bool reaction;
+    bool release;
+} Requirement;
 
-void calc_attrs_for_first_req() {
-    TRIGGER = re(PREV_H, H) && !D;
-    INVARIANT = true;
-    FINAL = true;
-    DELAY = true;
-    REACTION = D;
-    RELEASE = false;
+// %s
+// generated
+void calc_attrs_for_first_req(Requirement* req, Vars* vars) {
+    req->trigger = re(vars->prev_h, vars->h) && !vars->d;
+    req->invariant = true;
+    req->final = true;
+    req->delay = true;
+    req->reaction = vars->d;
+    req->release = false;
 }
 
-// void calc_attrs_for_second_req() {
-//     trigger = re(PREV_H && PREV_D, H && D) && !D;
-//     invariant = true;
-//     final = false;
-//     delay = true;
-//     reaction = false;
-//     release = true;
-// }
+// generated
+void calc_attrs_for_second_req(Requirement* req, Vars* vars) {
+    req->trigger = re(vars->prev_h, vars->h) && !vars->d;
+    req->invariant = true;
+    req->final = true;
+    req->delay = true;
+    req->reaction = vars->d;
+    req->release = false;
+}
 
 //////////////////////////////////////////////////////
 ///////////// REQUIREMENTS VERIFICATION //////////////
 //////////////////////////////////////////////////////
 
-bool a(void (*calc_attrs)(void));
-bool b(void (*calc_attrs)(void));
+bool check_requirement(void (*calc_attrs)(Requirement*, Vars*));
 
-bool check_requirement(void (*calc_attrs)(void)) {
-    init_vars();
+// generated
+bool check_requirement_first() {
+    return check_requirement(calc_attrs_for_first_req);
+}
+
+// generated
+bool check_requirement_second() {
+    return check_requirement(calc_attrs_for_second_req);
+}
+
+bool a(Requirement* req, Vars* vars, void (*calc_attrs)(Requirement*, Vars*));
+bool b(Requirement* req, Vars* vars, void (*calc_attrs)(Requirement*, Vars*));
+
+bool check_requirement(void (*calc_attrs)(Requirement*, Vars*)) {
+    Vars vars;
+    Requirement req;
+    init_vars(&vars);
     while(true) {
-        calc_attrs();
-        if (!TRIGGER) {
-            update_vars();
+        calc_attrs(&req, &vars);
+        if (!req.trigger) {
+            update_vars(&vars);
             continue;
         }
 
-        return a(calc_attrs);
+        return a(&req, &vars, calc_attrs);
     }
 }
 
-bool a(void (*calc_attrs)(void)) {
-    if (RELEASE) {
-        return true;
-    }
+bool a(Requirement* req, Vars* vars, void (*calc_attrs)(Requirement*, Vars*)) {
+    while (true) {
+        if (req->release) {
+            return true;
+        }
 
-    if (FINAL) {
-        return b(calc_attrs);
-    }
+        if (req->final) {
+            return b(req, vars, calc_attrs);
+        }
 
-    if (!INVARIANT) {
-        printf("a(): not final and not invariant\n");
-        return false;
-    }
-
-    update_vars();
-    calc_attrs();
-
-    return a(calc_attrs);
-}
-
-bool b(void (*calc_attrs)(void)) {
-    if (DELAY) {
-        if (!INVARIANT) {
-            printf("b(): delay, but not invariant\n");
+        if (!req->invariant) {
+            printf("a(): not final and not invariant\n");
             return false;
         }
 
-        if (!REACTION) {
-            printf("b(): delay, but not reaction\n");
+        update_vars(vars);
+        calc_attrs(req, vars);
+    }
+}
+
+bool b(Requirement* req, Vars* vars, void (*calc_attrs)(Requirement*, Vars*)) {
+    while (true) {
+        if (req->delay) {
+            if (!req->invariant) {
+                printf("b(): delay, but not invariant\n");
+                return false;
+            }
+
+            if (!req->reaction) {
+                printf("b(): delay, but not reaction\n");
+                return false;
+            }
+
+            return true;
+        }
+
+        if (!req->invariant) {
+            printf("b(): not delay and not invariant\n");
             return false;
         }
 
-        return true;
+        if (req->reaction) {
+            return true;
+        }
+
+        update_vars(vars);
+        calc_attrs(req, vars);
+
+        if (req->release) {
+            return true;
+        }
     }
-
-    if (!INVARIANT) {
-        printf("b(): not delay and not invariant\n");
-        return false;
-    }
-
-    if (REACTION) {
-        return true;
-    }
-
-    update_vars();
-    calc_attrs();
-
-    if (RELEASE) {
-        return true;
-    }
-
-    return b(calc_attrs);
 }
 
-void verify_requirement(char* req_name, void (*calc_attrs)(void)) {
+void verify_requirement(char* req_name, bool (*check_req)(void)) {
     printf("Verifying requirement \'%s\'\n", req_name);
-    bool success = check_requirement(calc_attrs);
+    bool success = check_req();
     if (success) {
         printf("Verification for requirement \'%s\' has succeeded", req_name);
     } else {
@@ -167,7 +195,8 @@ void verify_requirement(char* req_name, void (*calc_attrs)(void)) {
 
 int main(int argc, char *argv[]) {
     srand(time(NULL)); 
-    verify_requirement("first", calc_attrs_for_first_req);
-    // verify_requirement("second", calc_attrs_for_second_req);
-    // verify_requirement("third", calc_attrs_for_third_req);
+    // generated
+    verify_requirement("first", check_requirement_first);
+    // generated
+    verify_requirement("second", check_requirement_second);
 }
